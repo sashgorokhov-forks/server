@@ -595,12 +595,24 @@ async def schedule_flow_runs(flow_id: str, max_runs: int = None) -> List[str]:
         else:
             idempotency_key = f"auto-scheduled:{event.start_time.in_tz('UTC')}"
 
+        flow_run_name = None
+        if event.flow_run_name_template is not None:
+            formatting_kwargs = {
+                'flow_id': flow_id,
+                'flow_name': flow.name,
+                'scheduled_start_datetime': event.start_time,
+                'scheduled_start_date': event.start_time.date(),
+                'scheduled_start_time': event.start_time.time(),
+            }
+            flow_run_name = event.flow_run_name_template.format(**formatting_kwargs)
+
         run_id = await api.runs.create_flow_run(
             flow_id=flow_id,
             scheduled_start_time=event.start_time,
             parameters=event.parameter_defaults,
             labels=event.labels,
             idempotency_key=idempotency_key,
+            run_name=flow_run_name,
         )
 
         logger.debug(
