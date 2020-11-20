@@ -5,6 +5,7 @@ import uuid
 from typing import Any, Dict, List
 
 import pendulum
+import slugify
 from packaging import version as module_version
 from pydantic import BaseModel, Field, validator
 
@@ -541,6 +542,7 @@ async def schedule_flow_runs(flow_id: str, max_runs: int = None) -> List[str]:
         }
     ).first(
         {
+            "name": True,
             "schedule": True,
             "flow_group": {"schedule": True},
             with_args(
@@ -599,7 +601,7 @@ async def schedule_flow_runs(flow_id: str, max_runs: int = None) -> List[str]:
         if event.flow_run_name_template is not None:
             formatting_kwargs = {
                 'flow_id': flow_id,
-                'flow_name': flow.name,
+                'flow_name': slugify.slugify(flow.name),
                 'scheduled_start_datetime': event.start_time,
                 'scheduled_start_date': event.start_time.date(),
                 'scheduled_start_time': event.start_time.time(),
@@ -612,7 +614,7 @@ async def schedule_flow_runs(flow_id: str, max_runs: int = None) -> List[str]:
             parameters=event.parameter_defaults,
             labels=event.labels,
             idempotency_key=idempotency_key,
-            run_name=flow_run_name,
+            flow_run_name=flow_run_name,
         )
 
         logger.debug(
